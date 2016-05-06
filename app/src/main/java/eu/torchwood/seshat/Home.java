@@ -1,5 +1,7 @@
 package eu.torchwood.seshat;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -8,6 +10,17 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.api.GoogleApiClient;
+
+import java.util.List;
+
+import eu.torchwood.seshat.db.TournamentManager;
+import eu.torchwood.seshat.entity.Tournament;
 
 public class Home extends AppCompatActivity {
 
@@ -18,14 +31,49 @@ public class Home extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.new_tournament_button);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                Intent newTournament = new Intent(Home.this, NewTournamentActivity.class);
+                startActivity(newTournament);
             }
         });
+    }
+
+    private void deleteTournament(Long id){
+        new TournamentManager(this).deleteTournament(id);
+        displayTournaments();
+    }
+    private void displayTournaments() {
+        LinearLayout linearLayoutRecords = (LinearLayout) findViewById(R.id.tournamentRecords);
+        linearLayoutRecords.removeAllViews();
+
+        List<Tournament> tournaments = new TournamentManager(this).getTournaments();
+
+        if (tournaments.size() > 0) {
+            for (Tournament t : tournaments) {
+
+                TextView tournamentItem = new TextView(this);
+                tournamentItem.setPadding(0, 10, 0, 10);
+                tournamentItem.setText("Bla: " + t.getDescription());
+                tournamentItem.setTag(t.getId());
+                tournamentItem.setOnLongClickListener(new View.OnLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View v) {
+                        deleteTournament((Long)v.getTag());
+                        return true;
+                    }
+                });
+                linearLayoutRecords.addView(tournamentItem);
+            }
+
+        } else {
+            TextView noTournaments = new TextView(this);
+            noTournaments.setPadding(8, 8, 8, 8);
+            noTournaments.setText("No tournaments found.");
+            linearLayoutRecords.addView(noTournaments);
+        }
     }
 
     @Override
@@ -48,5 +96,17 @@ public class Home extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        displayTournaments();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
     }
 }
